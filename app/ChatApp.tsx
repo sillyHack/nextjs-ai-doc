@@ -2,15 +2,33 @@
 
 import { Button } from "../components/ui/button";
 import { useChat } from "ai/react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 import Image from "next/image";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, StopCircle } from "lucide-react";
 import Markdown from "react-markdown";
 
 const ChatApp = () => {
-	const { messages, input, handleInputChange, handleSubmit, stop, isLoading } =
-		useChat();
+	const {
+		messages,
+		input,
+		handleInputChange,
+		handleSubmit,
+		stop,
+		isLoading,
+		data,
+	} = useChat();
+
+	let add_data = undefined;
+	if (data) {
+		add_data = JSON.parse(JSON.stringify(data[0]));
+	}
 
 	return (
 		<div className="flex flex-col gap-3 items-center">
@@ -46,6 +64,13 @@ const ChatApp = () => {
 						<CardContent>
 							<Markdown className="prose">{m.content}</Markdown>
 						</CardContent>
+						{add_data && (
+							<CardFooter>
+								<Markdown className="prose">
+									{m.role !== "user" ? add_data["sources"] : ""}
+								</Markdown>
+							</CardFooter>
+						)}
 					</Card>
 				))}
 

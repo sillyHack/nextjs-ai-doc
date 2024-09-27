@@ -4,8 +4,7 @@ import {
 	streamText,
 	convertToCoreMessages,
 	embed,
-	OpenAIStream,
-	StreamingTextResponse,
+	StreamData,
 } from "ai";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 // import { openai_custom } from "@/lib/openai";
@@ -116,50 +115,19 @@ export async function POST(req: Request) {
 		},
 	];
 
+	// Create a new StreamData
+	const data = new StreamData();
+
+	// Append additional data
+	data.append({ sources: `${formattedResult.map((r) => `* [${r.url}](${r.url})\n`).join("")}`}); 
+
 	const result = await streamText({
 		model: openai("gpt-4-turbo"),
+		onFinish() {
+			data.close();
+		},
 		messages: convertToCoreMessages(finalMessages),
 	});
 
-	const originalStream = result.toDataStream();
-	const editedStream = new ReadableStream({
-		start(controller) {
-			const reader = originalStream.getReader();
-			read();
-
-			function read() {
-				reader.read().then(({ done, value }) => {
-					if (done) {
-						// Ajoute ton texte personnalisé à la fin de la stream
-						controller.enqueue(`\n\n### Source 
-				
-	  ${formattedResult.map((r) => `* [${r.url}](${r.url})\n`).join("")}`);
-						controller.close();
-						return;
-					}
-
-					// Ajoute les données de la stream OpenAI à ta nouvelle stream
-					controller.enqueue(value);
-					read();
-				});
-			}
-		},
-	});
-
-	console.log("ORIGINAL STREAM", originalStream);
-	console.log("EDITED STREAM", editedStream);
-
-	// return new StreamingTextResponse(editedStream);
-	const res =  new Response(editedStream, {
-		status: 200,
-		headers: {
-			contentType: "text/plain; charset=utf-8",
-		},
-	});
-
-	console.log("RES", res);
-
-	return res;
-
-	// return editedStream.toDataStreamResponse();
+	return result.toDataStreamResponse({data});
 }
